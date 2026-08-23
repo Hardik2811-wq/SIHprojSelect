@@ -411,29 +411,60 @@ function ProblemCard({ rank, p, scoring, mark = { votes: {}, our_pick: false, no
 /* ------------------------------------------------------------------ */
 function SlotPickerModal({ members, onSelect, refetch }) {
   const [name, setName] = useState("");
+  const [pin, setPin] = useState("");
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState("");
 
+  const targetSlot = members.find((m) => m.slot === selectedSlot);
+  const isOccupied = !!(targetSlot && targetSlot.name && targetSlot.name.trim());
+
+  const handleSlotClick = (m) => {
+    setSelectedSlot(m.slot);
+    setError("");
+    setPin("");
+    if (m.name && m.name.trim()) {
+      setName(m.name);
+    } else {
+      setName("");
+    }
+  };
+
   const handleSelect = async () => {
-    if (selectedSlot === null || !name.trim() || joining) return;
+    if (selectedSlot === null || joining) return;
     setJoining(true);
     setError("");
 
     try {
       // Re-fetch fresh state from DB to prevent race conditions
       const freshMembers = await refetch();
-      const target = freshMembers.find(m => m.slot === selectedSlot);
+      const dbTarget = freshMembers.find((m) => m.slot === selectedSlot);
+      const dbOccupied = !!(dbTarget && dbTarget.name && dbTarget.name.trim());
 
-      if (target && target.name && target.name.trim()) {
-        // Slot was taken between when we loaded and when we clicked
-        setError(`Slot ${selectedSlot + 1} was just taken by "${target.name}". Please pick another.`);
-        setSelectedSlot(null);
-        setJoining(false);
-        return;
+      if (isOccupied || dbOccupied) {
+        // Re-claiming an occupied slot — verify password!
+        const expectedPin = (dbTarget && dbTarget.pin) || "";
+        if (expectedPin && pin.trim() !== expectedPin.trim()) {
+          setError(`Incorrect password for ${dbTarget.name}'s slot.`);
+          setJoining(false);
+          return;
+        }
+        // Correct password -> Login into slot
+        onSelect({ slot: selectedSlot, name: dbTarget.name, pin: expectedPin, isNew: false });
+      } else {
+        // Claiming an empty slot — require name and password!
+        if (!name.trim()) {
+          setError("Please enter your name.");
+          setJoining(false);
+          return;
+        }
+        if (!pin.trim()) {
+          setError("Please set a password for your slot so you can access it later.");
+          setJoining(false);
+          return;
+        }
+        onSelect({ slot: selectedSlot, name: name.trim(), pin: pin.trim(), isNew: true });
       }
-
-      onSelect({ slot: selectedSlot, name: name.trim() });
     } catch (err) {
       setError("Connection error. Please try again.");
       setJoining(false);
@@ -447,12 +478,12 @@ function SlotPickerModal({ members, onSelect, refetch }) {
           <span>🤝</span> Realtime Team Sync
         </h2>
         <p className="text-xs text-gray-500 leading-relaxed">
-          Please select an empty slot and enter your name to collaborate in real-time with your team.
+          Select a slot to join. Empty slots require setting a password. Occupied slots require entering the slot password to access.
         </p>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 text-xs px-3 py-2 rounded-lg font-medium">
-            ⚠️ {error}
+          <div className="bg-red-50 border border-red-200 text-red-700 text-xs px-3 py-2 rounded-lg font-medium flex items-center gap-1.5">
+            <span>⚠️</span> {error}
           </div>
         )}
 
@@ -463,19 +494,22 @@ function SlotPickerModal({ members, onSelect, refetch }) {
             return (
               <button
                 key={m.slot}
-                disabled={(occupied && !isSelected) || joining}
-                onClick={() => { setSelectedSlot(m.slot); setError(""); }}
-                className={`p-3 border rounded-xl text-left transition duration-200 flex flex-col justify-between h-20 ${
-                  occupied
-                    ? "bg-slate-50 border-slate-200 opacity-60 cursor-not-allowed"
-                    : isSelected
+                disabled={joining}
+                onClick={() => handleSlotClick(m)}
+                className={`p-3 border rounded-xl text-left transition duration-200 flex flex-col justify-between h-20 cursor-pointer ${
+                  isSelected
                     ? "border-indigo-600 bg-indigo-50/50 ring-2 ring-indigo-500 shadow-sm"
-                    : "border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/10 cursor-pointer"
+                    : occupied
+                    ? "border-slate-200 bg-slate-50 hover:border-indigo-300 hover:bg-indigo-50/20"
+                    : "border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/10"
                 }`}
               >
-                <span className={`font-semibold text-sm ${isSelected ? "text-indigo-700" : "text-slate-700"}`}>
-                  Slot {m.slot + 1}
-                </span>
+                <div className="flex justify-between items-center w-full">
+                  <span className={`font-semibold text-sm ${isSelected ? "text-indigo-700" : "text-slate-700"}`}>
+                    Slot {m.slot + 1}
+                  </span>
+                  {occupied && <span className="text-[10px] bg-slate-200 text-slate-700 font-semibold px-1.5 py-0.5 rounded">🔒 Protected</span>}
+                </div>
                 <span className="text-xs text-slate-500 truncate w-full">
                   {occupied ? `👤 ${m.name}` : "✨ Available"}
                 </span>
@@ -485,34 +519,74 @@ function SlotPickerModal({ members, onSelect, refetch }) {
         </div>
 
         {selectedSlot !== null && (
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-600 block">Your Name</label>
-            <input
-              type="text"
-              maxLength={30}
-              disabled={joining}
-              className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 focus:outline-none disabled:bg-slate-50"
-              placeholder="e.g. Alice"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") handleSelect(); }}
-            />
+          <div className="space-y-3 pt-1 border-t border-slate-100">
+            {isOccupied ? (
+              <div className="bg-indigo-50/60 border border-indigo-100 rounded-xl p-3 space-y-2">
+                <div className="text-xs font-semibold text-indigo-900 flex items-center justify-between">
+                  <span>Access Slot {selectedSlot + 1}</span>
+                  <span className="text-indigo-600 font-bold">👤 {targetSlot.name}</span>
+                </div>
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-600 block mb-1">Enter Password for {targetSlot.name}</label>
+                  <input
+                    type="password"
+                    maxLength={30}
+                    disabled={joining}
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 focus:outline-none bg-white"
+                    placeholder="Enter password..."
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") handleSelect(); }}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div>
+                  <label className="text-xs font-semibold text-slate-600 block mb-1">Your Name</label>
+                  <input
+                    type="text"
+                    maxLength={30}
+                    disabled={joining}
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                    placeholder="e.g. Alice"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-600 block mb-1">Set Password (to protect your slot)</label>
+                  <input
+                    type="password"
+                    maxLength={30}
+                    disabled={joining}
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                    placeholder="Set a slot password..."
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") handleSelect(); }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         )}
 
         <div className="flex justify-end gap-2 pt-2">
           <button
-            disabled={selectedSlot === null || !name.trim() || joining}
+            disabled={selectedSlot === null || (isOccupied ? !pin.trim() : (!name.trim() || !pin.trim())) || joining}
             onClick={handleSelect}
-            className="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed transition duration-200 flex items-center justify-center gap-2"
+            className="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed transition duration-200 flex items-center justify-center gap-2 cursor-pointer"
           >
             {joining ? (
               <>
                 <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                Joining...
+                Verifying...
               </>
+            ) : isOccupied ? (
+              `Unlock & Access Slot ${selectedSlot + 1}`
             ) : (
-              "Join Team"
+              `Claim & Protect Slot ${selectedSlot + 1}`
             )}
           </button>
         </div>
@@ -683,15 +757,17 @@ export default function App() {
           members={members}
           refetch={refetch}
           onSelect={async (chosen) => {
-            const { error } = await saveSlotNow(chosen.slot, { name: chosen.name });
-            if (error) {
-              alert("Failed to claim slot. Please try again.");
-              return;
+            if (chosen.isNew) {
+              const { error } = await saveSlotNow(chosen.slot, { name: chosen.name, pin: chosen.pin });
+              if (error) {
+                alert("Failed to claim slot. Please try again.");
+                return;
+              }
             }
-            localStorage.setItem("sih_me", JSON.stringify(chosen));
-            setMe(chosen);
-            // Also update local state immediately
-            setMembers(prev => prev.map(m => m.slot === chosen.slot ? { ...m, name: chosen.name } : m));
+            const meObj = { slot: chosen.slot, name: chosen.name };
+            localStorage.setItem("sih_me", JSON.stringify(meObj));
+            setMe(meObj);
+            setMembers(prev => prev.map(m => m.slot === chosen.slot ? { ...m, name: chosen.name, pin: chosen.pin || m.pin } : m));
           }}
         />
       )}
@@ -750,12 +826,9 @@ export default function App() {
             <div className="flex items-center gap-2 bg-indigo-800 px-3 py-1 rounded-lg border border-indigo-600">
               <span>👤 <b>{me.name}</b> (Slot {me.slot + 1})</span>
               <button
-                onClick={async () => {
-                  const slot = me.slot;
+                onClick={() => {
                   localStorage.removeItem("sih_me");
                   setMe(null);
-                  setMembers(prev => prev.map(m => m.slot === slot ? { ...m, name: "", skills: {} } : m));
-                  await saveSlotNow(slot, { name: "", skills: {} });
                 }}
                 className="underline hover:text-indigo-200 font-medium cursor-pointer"
               >

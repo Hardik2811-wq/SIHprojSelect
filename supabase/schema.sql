@@ -8,9 +8,13 @@
 create table if not exists public.team_members (
   slot       int primary key check (slot between 0 and 5),
   name       text not null default '',
+  pin        text not null default '',
   skills     jsonb not null default '{}'::jsonb,
   updated_at timestamptz not null default now()
 );
+
+-- Ensure pin column exists for existing tables
+alter table public.team_members add column if not exists pin text not null default '';
 
 -- 2. Per-problem marks: votes, our-pick, notes
 create table if not exists public.problem_marks (

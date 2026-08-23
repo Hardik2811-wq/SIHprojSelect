@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { supabase } from "../lib/supabase.js";
 
-const EMPTY = Array.from({length:6},(_,slot)=>({slot, idx:slot, name:"",skills:{}}));
+const EMPTY = Array.from({length:6},(_,slot)=>({slot, idx:slot, name:"", pin:"", skills:{}}));
 
 export default function useTeamSync(me) {
   const [members, setMembers] = useState(EMPTY);
@@ -29,7 +29,7 @@ export default function useTeamSync(me) {
       if (data) {
         setMembers(EMPTY.map(e => { 
           const d = data.find(x => x.slot === e.slot); 
-          return d ? {slot:e.slot, idx:e.slot, name:d.name||"", skills:d.skills||{}} : e; 
+          return d ? {slot:e.slot, idx:e.slot, name:d.name||"", pin:d.pin||"", skills:d.skills||{}} : e; 
         }));
       }
       setDbError(null);
@@ -45,7 +45,7 @@ export default function useTeamSync(me) {
             return;
           }
           setMembers(prev => prev.map(m => m.slot === row.slot 
-            ? {slot: row.slot, idx: row.slot, name: payload.eventType==="DELETE" ? "" : row.name || "", skills: payload.eventType==="DELETE" ? {} : row.skills || {}} 
+            ? {slot: row.slot, idx: row.slot, name: payload.eventType==="DELETE" ? "" : row.name || "", pin: payload.eventType==="DELETE" ? "" : row.pin || "", skills: payload.eventType==="DELETE" ? {} : row.skills || {}} 
             : m));
         }
       })
@@ -65,7 +65,7 @@ export default function useTeamSync(me) {
     }, 400);
   }, []);
 
-  // Immediate save — no debounce, used for slot claiming
+  // Immediate save — no debounce, used for slot claiming/login
   const saveSlotNow = useCallback(async (slot, patch) => {
     if (!supabase) return { error: null };
     clearTimeout(timers.current[slot]);
@@ -82,7 +82,7 @@ export default function useTeamSync(me) {
     if (data) {
       const fresh = EMPTY.map(e => {
         const d = data.find(x => x.slot === e.slot);
-        return d ? {slot:e.slot, idx:e.slot, name:d.name||"", skills:d.skills||{}} : e;
+        return d ? {slot:e.slot, idx:e.slot, name:d.name||"", pin:d.pin||"", skills:d.skills||{}} : e;
       });
       setMembers(fresh);
       return fresh;
