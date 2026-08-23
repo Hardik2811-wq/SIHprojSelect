@@ -735,7 +735,7 @@ export default function App() {
   const onChangeMember = (idx, nm) => {
     setMembers((prev) => prev.map((x, j) => (j === idx ? nm : x)));
     if (isCloud) {
-      saveSlot(idx, { name: nm.name, skills: nm.skills });
+      saveSlotNow(idx, { name: nm.name, skills: nm.skills });
     }
   };
 
