@@ -3,15 +3,15 @@ import { supabase } from "../lib/supabase.js";
 
 const EMPTY = Array.from({length:6},(_,slot)=>({slot, idx:slot, name:"",skills:{}}));
 
-export default function useTeamSync(mySlotIndex) {
+export default function useTeamSync(me) {
   const [members, setMembers] = useState(EMPTY);
   const [ready, setReady] = useState(!supabase);
   const timers = useRef({});
-  const mySlotRef = useRef(mySlotIndex);
+  const meRef = useRef(me);
 
   useEffect(() => {
-    mySlotRef.current = mySlotIndex;
-  }, [mySlotIndex]);
+    meRef.current = me;
+  }, [me]);
 
   useEffect(() => {
     if (!supabase) return;
@@ -31,8 +31,10 @@ export default function useTeamSync(mySlotIndex) {
       .on("postgres_changes", { event: "*", schema: "public", table: "team_members" }, (payload) => {
         const row = payload.new && payload.new.slot != null ? payload.new : payload.old;
         if (row && row.slot != null) {
-          // Ignore echo updates for our own slot to prevent cursor jumping
-          if (mySlotRef.current !== undefined && mySlotRef.current !== null && row.slot === mySlotRef.current) {
+          const currentMe = meRef.current;
+          // Ignore echo updates for our own slot only if the name matches.
+          // If the name has changed, do not ignore it so we can detect if someone claimed our slot!
+          if (currentMe && row.slot === currentMe.slot && row.name === currentMe.name) {
             return;
           }
           setMembers(prev => prev.map(m => m.slot === row.slot 

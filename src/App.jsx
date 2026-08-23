@@ -486,7 +486,7 @@ export default function App() {
   });
 
   // Use team synchronization hooks
-  const { members, setMembers, saveSlot, ready: teamReady } = useTeamSync(me?.slot);
+  const { members, setMembers, saveSlot, ready: teamReady } = useTeamSync(me);
   const { marks, updateMark } = useMarksSync();
   const online = usePresence(me?.name);
 
@@ -611,8 +611,18 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
+      {/* Loading Overlay */}
+      {isCloud && !teamReady && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl p-6 shadow-2xl space-y-4 max-w-sm w-full text-center">
+            <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+            <p className="text-sm font-semibold text-slate-700">Connecting to database...</p>
+          </div>
+        </div>
+      )}
+
       {/* Slot Onboarding Picker Overlay */}
-      {isCloud && !me && (
+      {isCloud && teamReady && !me && (
         <SlotPickerModal
           members={members}
           onSelect={(chosen) => {
