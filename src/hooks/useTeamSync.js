@@ -3,10 +3,15 @@ import { supabase } from "../lib/supabase.js";
 
 const EMPTY = Array.from({length:6},(_,slot)=>({slot, idx:slot, name:"",skills:{}}));
 
-export default function useTeamSync() {
+export default function useTeamSync(mySlotIndex) {
   const [members, setMembers] = useState(EMPTY);
   const [ready, setReady] = useState(!supabase);
   const timers = useRef({});
+  const mySlotRef = useRef(mySlotIndex);
+
+  useEffect(() => {
+    mySlotRef.current = mySlotIndex;
+  }, [mySlotIndex]);
 
   useEffect(() => {
     if (!supabase) return;
@@ -26,6 +31,10 @@ export default function useTeamSync() {
       .on("postgres_changes", { event: "*", schema: "public", table: "team_members" }, (payload) => {
         const row = payload.new && payload.new.slot != null ? payload.new : payload.old;
         if (row && row.slot != null) {
+          // Ignore echo updates for our own slot to prevent cursor jumping
+          if (mySlotRef.current !== undefined && mySlotRef.current !== null && row.slot === mySlotRef.current) {
+            return;
+          }
           setMembers(prev => prev.map(m => m.slot === row.slot 
             ? {slot: row.slot, idx: row.slot, name: payload.eventType==="DELETE" ? "" : row.name || "", skills: payload.eventType==="DELETE" ? {} : row.skills || {}} 
             : m));

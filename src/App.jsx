@@ -212,6 +212,8 @@ function ProblemCard({ rank, p, scoring, mark = { votes: {}, our_pick: false, no
     p.difficulty === "Hard" ? "bg-red-100 text-red-700" :
     p.difficulty === "Medium" ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700";
 
+  const isFocusedRef = useRef(false);
+
   const hasVoted = myName && mark.votes && mark.votes[myName];
   const voteCount = Object.values(mark.votes || {}).filter(Boolean).length;
   const voters = Object.keys(mark.votes || {}).filter(k => mark.votes[k]);
@@ -235,7 +237,9 @@ function ProblemCard({ rank, p, scoring, mark = { votes: {}, our_pick: false, no
 
   const [localNotes, setLocalNotes] = useState(mark.notes || "");
   useEffect(() => {
-    setLocalNotes(mark.notes || "");
+    if (!isFocusedRef.current) {
+      setLocalNotes(mark.notes || "");
+    }
   }, [mark.notes]);
 
   const timerRef = useRef(null);
@@ -368,8 +372,12 @@ function ProblemCard({ rank, p, scoring, mark = { votes: {}, our_pick: false, no
                 placeholder={myName ? "Add collaborative notes..." : "Select slot first to edit notes..."}
                 disabled={!myName}
                 value={localNotes}
+                onFocus={() => { isFocusedRef.current = true; }}
                 onChange={(e) => handleNotesChange(e.target.value)}
-                onBlur={handleNotesBlur}
+                onBlur={() => {
+                  isFocusedRef.current = false;
+                  handleNotesBlur();
+                }}
                 className="w-full border rounded p-1 text-[11px] h-10 resize-none focus:ring-1 focus:ring-indigo-500 focus:outline-none"
               />
             </div>
@@ -478,7 +486,7 @@ export default function App() {
   });
 
   // Use team synchronization hooks
-  const { members, setMembers, saveSlot, ready: teamReady } = useTeamSync();
+  const { members, setMembers, saveSlot, ready: teamReady } = useTeamSync(me?.slot);
   const { marks, updateMark } = useMarksSync();
   const online = usePresence(me?.name);
 
