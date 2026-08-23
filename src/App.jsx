@@ -626,10 +626,11 @@ export default function App() {
         setMe(null);
         alert(`Slot ${me.slot + 1} has been taken by "${mySlot.name}". Please pick another slot.`);
       } else if (mySlot && !mySlot.name) {
-        saveSlotNow(me.slot, { name: me.name });
+        localStorage.removeItem("sih_me");
+        setMe(null);
       }
     }
-  }, [isCloud, teamReady, members, me, saveSlotNow]);
+  }, [isCloud, teamReady, members, me]);
 
   const activeMembers = members.filter((m) => m.name.trim() || (m.skills && Object.keys(m.skills).length));
 
