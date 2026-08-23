@@ -136,15 +136,29 @@ function MemberSlot({ idx, member, onChange, readOnly }) {
 
   return (
     <div className="border rounded-xl p-3 bg-white shadow-sm border-indigo-200 ring-1 ring-indigo-50/50">
-      <div className="flex justify-between items-center mb-1">
-        <label className="text-xs font-semibold text-indigo-700">Slot {idx + 1} (You)</label>
-      </div>
-      <input
-        className="w-full border rounded px-2 py-1 text-sm mb-2 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
-        placeholder={`Enter your name`}
-        value={member.name}
-        onChange={(e) => update({ name: e.target.value })}
-      />
+      {member.name ? (
+        <div className="font-bold text-base text-indigo-900 mb-2 truncate flex items-center justify-between">
+          <div className="flex items-center gap-1.5 truncate">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" title="Active"></span>
+            <span className="truncate">{member.name}</span>
+          </div>
+          <span className="text-[11px] font-medium text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200 shrink-0 ml-2">
+            Slot {idx + 1} (You)
+          </span>
+        </div>
+      ) : (
+        <>
+          <div className="flex justify-between items-center mb-1">
+            <label className="text-xs font-semibold text-indigo-700">Slot {idx + 1} (You)</label>
+          </div>
+          <input
+            className="w-full border rounded px-2 py-1 text-sm mb-2 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+            placeholder={`Enter your name`}
+            value={member.name}
+            onChange={(e) => update({ name: e.target.value })}
+          />
+        </>
+      )}
       <div className="flex flex-wrap gap-1 mb-2">
         {SKILLS.map((s) => {
           const has = member.skills && member.skills[s] != null;
