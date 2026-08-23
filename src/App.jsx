@@ -219,7 +219,7 @@ function MultiSelect({ label, options, selected, setSelected }) {
   );
 }
 
-function ProblemCard({ rank, p, scoring, mark = { votes: {}, our_pick: false, notes: "" }, myName, updateMark }) {
+function ProblemCard({ rank, p, scoring, mark = { votes: {}, our_pick: false, notes: "" }, myName, updateMark, missingSkills, isComparing, onToggleCompare }) {
   const [flipped, setFlipped] = useState(false);
   const q = quadrantMeta[quadrantOf(p)];
   const diffCls =
@@ -305,12 +305,29 @@ function ProblemCard({ rank, p, scoring, mark = { votes: {}, our_pick: false, no
             <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">{p.theme}</span>
             <span className={`text-[11px] px-2 py-0.5 rounded-full ${diffCls}`}>{p.difficulty}</span>
           </div>
+          {missingSkills && missingSkills.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {missingSkills.slice(0, 3).map(s => (
+                <span key={s} className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200" title={`No team member covers: ${s}`}>⚠ {s}</span>
+              ))}
+              {missingSkills.length > 3 && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-50 text-red-500">+{missingSkills.length - 3} gaps</span>
+              )}
+            </div>
+          )}
           <div className="mt-auto flex items-center gap-3">
             <ScoreRing value={scoring.score} />
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <div className={`inline-block text-[11px] px-2 py-0.5 rounded-full border ${q.cls}`}>{q.label}</div>
               <p className="text-[11px] text-gray-400 mt-1">click to flip ↻</p>
             </div>
+            <button
+              className={`no-flip shrink-0 w-7 h-7 rounded-lg border-2 flex items-center justify-center text-xs transition ${isComparing ? "bg-indigo-600 border-indigo-600 text-white" : "border-gray-300 text-gray-400 hover:border-indigo-400 hover:text-indigo-500"}`}
+              title={isComparing ? "Remove from comparison" : "Add to comparison"}
+              onClick={(e) => { e.stopPropagation(); onToggleCompare(p.id); }}
+            >
+              {isComparing ? "✓" : "⇔"}
+            </button>
           </div>
         </div>
 
@@ -638,6 +655,9 @@ export default function App() {
   const [themeSel, setThemeSel] = useState(() => new Set(allThemes));
   const [diffSel, setDiffSel] = useState(() => new Set(DIFFICULTIES));
   const [quadSel, setQuadSel] = useState(() => new Set(QUADRANTS.map((q) => q.key)));
+  const [searchQ, setSearchQ] = useState("");
+  const [sortBy, setSortBy] = useState("score"); // "score" | "votes"
+  const [compareIds, setCompareIds] = useState(new Set()); // for side-by-side comparison
 
   const scored = useMemo(
     () =>
@@ -647,18 +667,26 @@ export default function App() {
 
   // Filter (AND across categories, OR within), then re-rank the visible subset
   const visible = useMemo(() => {
+    const q = searchQ.trim().toLowerCase();
     return scored
       .filter(({ p }) =>
         themeSel.has(p.theme) &&
         diffSel.has(p.difficulty) &&
-        quadSel.has(quadrantOf(p))
+        quadSel.has(quadrantOf(p)) &&
+        (!q || p.id.toLowerCase().includes(q) || p.title.toLowerCase().includes(q) || p.organization.toLowerCase().includes(q) || p.theme.toLowerCase().includes(q) || (p.techStack || []).some(t => t.toLowerCase().includes(q)) || (p.requiredSkills || []).some(s => s.toLowerCase().includes(q)))
       )
-      .sort(
-        (a, b) =>
+      .sort((a, b) => {
+        if (sortBy === "votes") {
+          const va = Object.values(marks[a.p.id]?.votes || {}).filter(Boolean).length;
+          const vb = Object.values(marks[b.p.id]?.votes || {}).filter(Boolean).length;
+          if (vb !== va) return vb - va;
+        }
+        return (
           b.scoring.score - a.scoring.score ||
           COMP_RANK[a.p.estimatedCompetition] - COMP_RANK[b.p.estimatedCompetition]
-      );
-  }, [scored, themeSel, diffSel, quadSel]);
+        );
+      });
+  }, [scored, themeSel, diffSel, quadSel, searchQ, sortBy, marks]);
 
   // Team skill coverage strip
   const coverage = useMemo(() => {
@@ -679,6 +707,8 @@ export default function App() {
     setThemeSel(new Set(allThemes));
     setDiffSel(new Set(DIFFICULTIES));
     setQuadSel(new Set(QUADRANTS.map((q) => q.key)));
+    setSearchQ("");
+    setSortBy("score");
   };
 
   const exportTeam = () => {
@@ -887,6 +917,40 @@ export default function App() {
           )}
         </section>
 
+        {/* Search bar */}
+        <section className="flex items-center gap-2">
+          <div className="relative flex-1 max-w-md">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
+            <input
+              type="text"
+              placeholder="Search by PS ID, title, org, skill, tech..."
+              value={searchQ}
+              onChange={(e) => setSearchQ(e.target.value)}
+              className="w-full border rounded-xl pl-9 pr-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-400 focus:outline-none shadow-sm"
+            />
+            {searchQ && (
+              <button
+                onClick={() => setSearchQ("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs cursor-pointer"
+              >✕</button>
+            )}
+          </div>
+          <div className="flex items-center bg-white border rounded-xl shadow-sm overflow-hidden text-sm">
+            <button
+              onClick={() => setSortBy("score")}
+              className={`px-3 py-2 font-medium transition cursor-pointer ${sortBy === "score" ? "bg-indigo-600 text-white" : "text-gray-600 hover:bg-gray-50"}`}
+            >
+              Sort: Team Fit
+            </button>
+            <button
+              onClick={() => setSortBy("votes")}
+              className={`px-3 py-2 font-medium transition cursor-pointer ${sortBy === "votes" ? "bg-indigo-600 text-white" : "text-gray-600 hover:bg-gray-50"}`}
+            >
+              Sort: Votes
+            </button>
+          </div>
+        </section>
+
         {/* Filters + legend */}
         <section className="flex flex-wrap items-center gap-2">
           <MultiSelect label="Theme" options={allThemes} selected={themeSel} setSelected={setThemeSel} />
@@ -894,6 +958,14 @@ export default function App() {
           <MultiSelect label="Risk/Reward" options={QUADRANTS.map((q) => q.key)} selected={quadSel} setSelected={setQuadSel} />
           <button onClick={clearFilters} className="text-sm border rounded-lg px-3 py-1.5 bg-white hover:bg-gray-100 cursor-pointer">Clear filters</button>
           <button onClick={exportCSV} className="text-sm border rounded-lg px-3 py-1.5 bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer">⬇ Export CSV</button>
+          {compareIds.size > 0 && (
+            <button
+              onClick={() => setCompareIds(new Set())}
+              className="text-sm border rounded-lg px-3 py-1.5 bg-red-50 text-red-600 border-red-200 hover:bg-red-100 cursor-pointer"
+            >
+              Clear compare ({compareIds.size})
+            </button>
+          )}
           <span className="text-sm text-gray-500 ml-auto">Showing {visible.length} of {PROBLEMS.length} problems</span>
         </section>
 
@@ -911,20 +983,91 @@ export default function App() {
           </div>
         ) : (
           <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-10">
-            {visible.map(({ p, scoring }, i) => (
-              <ProblemCard
-                key={p.id}
-                rank={i + 1}
-                p={p}
-                scoring={scoring}
-                mark={marks[p.id]}
-                myName={me?.name}
-                updateMark={updateMark}
-              />
-            ))}
+            {visible.map(({ p, scoring }, i) => {
+              const missing = scoring.details.filter(d => !d.covered).map(d => d.skill);
+              return (
+                <ProblemCard
+                  key={p.id}
+                  rank={i + 1}
+                  p={p}
+                  scoring={scoring}
+                  mark={marks[p.id]}
+                  myName={me?.name}
+                  updateMark={updateMark}
+                  missingSkills={missing}
+                  isComparing={compareIds.has(p.id)}
+                  onToggleCompare={(id) => setCompareIds(prev => {
+                    const next = new Set(prev);
+                    next.has(id) ? next.delete(id) : next.add(id);
+                    return next;
+                  })}
+                />
+              );
+            })}
           </section>
         )}
       </main>
+
+      {/* Floating Compare Bar */}
+      {compareIds.size >= 2 && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 bg-indigo-700 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-4 text-sm">
+          <span className="font-semibold">{compareIds.size} problems selected</span>
+          <button
+            onClick={() => document.getElementById("compare-modal").showModal()}
+            className="bg-white text-indigo-700 font-bold px-4 py-1.5 rounded-xl hover:bg-indigo-50 transition cursor-pointer"
+          >
+            ⇔ Compare Side-by-Side
+          </button>
+          <button
+            onClick={() => setCompareIds(new Set())}
+            className="text-indigo-200 hover:text-white underline cursor-pointer"
+          >Clear</button>
+        </div>
+      )}
+
+      {/* Comparison Modal */}
+      <dialog id="compare-modal" className="w-[95vw] max-w-6xl max-h-[90vh] rounded-2xl shadow-2xl p-0 backdrop:bg-black/50">
+        <div className="p-5 overflow-auto max-h-[90vh]">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-bold text-indigo-800">⇔ Side-by-Side Comparison</h2>
+            <button
+              onClick={() => document.getElementById("compare-modal").close()}
+              className="text-gray-400 hover:text-gray-700 text-xl font-bold cursor-pointer"
+            >✕</button>
+          </div>
+          {(() => {
+            const items = scored.filter(({ p }) => compareIds.has(p.id));
+            if (items.length < 2) return <p className="text-gray-500 text-sm">Select at least 2 problems to compare.</p>;
+            return (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50">
+                      <th className="text-left p-3 border-b font-semibold text-gray-500 w-40">Attribute</th>
+                      {items.map(({ p }) => (
+                        <th key={p.id} className="text-left p-3 border-b font-bold text-indigo-700 min-w-[200px]">{p.id}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td className="p-3 border-b font-semibold text-gray-600">Title</td>{items.map(({ p }) => <td key={p.id} className="p-3 border-b font-medium">{p.title}</td>)}</tr>
+                    <tr><td className="p-3 border-b font-semibold text-gray-600">Organization</td>{items.map(({ p }) => <td key={p.id} className="p-3 border-b text-gray-700">{p.organization}</td>)}</tr>
+                    <tr><td className="p-3 border-b font-semibold text-gray-600">Theme</td>{items.map(({ p }) => <td key={p.id} className="p-3 border-b"><span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-xs">{p.theme}</span></td>)}</tr>
+                    <tr><td className="p-3 border-b font-semibold text-gray-600">Difficulty</td>{items.map(({ p }) => <td key={p.id} className="p-3 border-b"><span className={`px-2 py-0.5 rounded-full text-xs ${p.difficulty === "Hard" ? "bg-red-100 text-red-700" : p.difficulty === "Medium" ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}`}>{p.difficulty}</span></td>)}</tr>
+                    <tr><td className="p-3 border-b font-semibold text-gray-600">Competition</td>{items.map(({ p }) => <td key={p.id} className="p-3 border-b">{p.estimatedCompetition}</td>)}</tr>
+                    <tr className="bg-indigo-50/50"><td className="p-3 border-b font-bold text-indigo-700">Team Fit Score</td>{items.map(({ p, scoring }) => <td key={p.id} className="p-3 border-b font-bold text-lg">{scoring.score}%</td>)}</tr>
+                    <tr><td className="p-3 border-b font-semibold text-gray-600">Team Votes</td>{items.map(({ p }) => { const v = Object.values(marks[p.id]?.votes || {}).filter(Boolean).length; return <td key={p.id} className="p-3 border-b font-semibold">{v > 0 ? `👍 ${v}` : "—"}</td>; })}</tr>
+                    <tr><td className="p-3 border-b font-semibold text-gray-600">Required Skills</td>{items.map(({ p, scoring }) => <td key={p.id} className="p-3 border-b"><div className="flex flex-wrap gap-1">{scoring.details.map(d => <span key={d.skill} className={`text-[10px] px-1.5 py-0.5 rounded-full ${d.covered ? "bg-green-100 text-green-700" : "bg-red-50 text-red-600 border border-red-200"}`}>{d.covered ? "✓" : "⚠"} {d.skill}</span>)}</div></td>)}</tr>
+                    <tr><td className="p-3 border-b font-semibold text-gray-600">Skill Gaps</td>{items.map(({ p, scoring }) => { const gaps = scoring.details.filter(d => !d.covered).map(d => d.skill); return <td key={p.id} className="p-3 border-b">{gaps.length === 0 ? <span className="text-green-600 font-semibold">✅ None!</span> : <span className="text-red-600 font-semibold">{gaps.length} missing</span>}</td>; })}</tr>
+                    <tr><td className="p-3 border-b font-semibold text-gray-600">Tech Stack</td>{items.map(({ p }) => <td key={p.id} className="p-3 border-b"><div className="flex flex-wrap gap-1">{(p.techStack || []).slice(0, 6).map(t => <span key={t} className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600">{t}</span>)}</div></td>)}</tr>
+                    <tr><td className="p-3 font-semibold text-gray-600">Summary</td>{items.map(({ p }) => <td key={p.id} className="p-3 text-gray-600 text-xs leading-relaxed">{p.problemSummary}</td>)}</tr>
+                  </tbody>
+                </table>
+              </div>
+            );
+          })()}
+        </div>
+      </dialog>
     </div>
   );
 }
