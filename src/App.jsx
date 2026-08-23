@@ -184,7 +184,7 @@ function MultiSelect({ label, options, selected, setSelected }) {
         <summary className="cursor-pointer list-none border rounded-lg px-3 py-1.5 text-sm bg-white hover:bg-gray-50 select-none">
           {label}: {allSelected ? "All" : `${selected.size} selected`} ▾
         </summary>
-        <div className="absolute z-20 mt-1 max-h-72 overflow-auto border rounded-lg bg-white shadow-lg p-2 w-64">
+        <div className="absolute z-20 mt-1 max-h-72 overflow-auto border rounded-lg bg-white shadow-lg p-2 w-64 left-0 sm:left-auto right-0 max-w-[calc(100vw-2rem)]">
           {options.map((o) => (
             <label key={o} className="flex items-center gap-2 px-1 py-0.5 text-sm rounded hover:bg-gray-50 cursor-pointer">
               <input
@@ -526,7 +526,7 @@ export default function App() {
   // Use team synchronization hooks
   const { members, setMembers, saveSlot, saveSlotNow, refetch, ready: teamReady, dbError } = useTeamSync(me);
   const { marks, updateMark } = useMarksSync();
-  const online = usePresence(me?.name);
+  const online = usePresence(me);
 
   // If cloud is active, verify that our local slot matches what's in Supabase,
   // or handle slot ownership.
@@ -605,20 +605,24 @@ export default function App() {
     f.text().then((t) => {
       try {
         const parsed = JSON.parse(t);
-        const normalized = parsed.map((m, i) => ({
-          slot: m.slot ?? m.idx ?? i,
-          idx: m.slot ?? m.idx ?? i,
-          name: m.name || "",
-          skills: m.skills || {},
-        }));
+        if (!Array.isArray(parsed)) throw new Error("Invalid format");
+        const normalized = Array.from({ length: 6 }, (_, i) => {
+          const item = parsed.find(x => (x && (x.slot === i || x.idx === i))) || parsed[i] || {};
+          return {
+            slot: i,
+            idx: i,
+            name: typeof item.name === "string" ? item.name.slice(0, 50) : "",
+            skills: typeof item.skills === "object" && item.skills !== null ? item.skills : {},
+          };
+        });
         setMembers(normalized);
         if (isCloud) {
           normalized.forEach((m) => {
-            saveSlot(m.slot, { name: m.name, skills: m.skills });
+            saveSlotNow(m.slot, { name: m.name, skills: m.skills });
           });
         }
       } catch {
-        alert("Invalid team file");
+        alert("Invalid team file — must be a JSON array of member objects.");
       }
     });
   };

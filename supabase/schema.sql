@@ -1,6 +1,6 @@
 -- ============================================================
 -- SIH 2026 Skill-Match — Supabase schema
--- Run this ONCE in: Supabase Dashboard → SQL Editor → New query
+-- Run this in: Supabase Dashboard → SQL Editor → New query
 -- Then click "Run".
 -- ============================================================
 
@@ -33,9 +33,14 @@ drop policy if exists "marks_public_access" on public.problem_marks;
 create policy "marks_public_access" on public.problem_marks
   for all using (true) with check (true);
 
--- 4. Enable realtime broadcasts (equivalent of Database → Replication toggle)
-drop publication if exists supabase_realtime;
-create publication supabase_realtime;
+-- 4. Enable realtime broadcasts (idempotent — will not drop active subscriptions)
+do $$
+begin
+  if not exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
+    create publication supabase_realtime;
+  end if;
+end $$;
+
 alter publication supabase_realtime add table public.team_members;
 alter publication supabase_realtime add table public.problem_marks;
 

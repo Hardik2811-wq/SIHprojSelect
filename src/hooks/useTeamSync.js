@@ -50,7 +50,11 @@ export default function useTeamSync(me) {
         }
       })
       .subscribe();
-    return () => { supabase.removeChannel(ch); cancelled = true; };
+    return () => { 
+      supabase.removeChannel(ch); 
+      cancelled = true; 
+      Object.values(timers.current).forEach(clearTimeout);
+    };
   }, []);
 
   const saveSlot = useCallback((slot, patch) => {
