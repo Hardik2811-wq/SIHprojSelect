@@ -11,8 +11,13 @@ export function useMarksSync() {
     })();
     const ch = supabase.channel("problem-marks")
       .on("postgres_changes", { event: "*", schema: "public", table: "problem_marks" }, (payload) => {
-        if (payload.eventType === "DELETE") setMarks(prev => { const n={...prev}; delete n[payload.old.ps_id]; return n; });
-        else setMarks(prev => ({ ...prev, [payload.new.ps_id]: payload.new }));
+        if (payload.eventType === "DELETE") {
+          if (payload.old && payload.old.ps_id) {
+            setMarks(prev => { const n={...prev}; delete n[payload.old.ps_id]; return n; });
+          }
+        } else if (payload.new && payload.new.ps_id) {
+          setMarks(prev => ({ ...prev, [payload.new.ps_id]: payload.new }));
+        }
       }).subscribe();
     return () => supabase.removeChannel(ch);
   }, []);

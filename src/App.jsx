@@ -112,7 +112,7 @@ function MemberSlot({ idx, member, onChange, readOnly }) {
     return (
       <div className="border rounded-xl p-3 bg-gray-50/50 shadow-sm border-gray-200">
         <div className="font-bold text-sm text-gray-700 mb-2 truncate flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-gray-450"></span>
+          <span className="w-2 h-2 rounded-full bg-gray-400"></span>
           {member.name || `Slot ${idx + 1} (Empty)`}
         </div>
         {hasSkills ? (
@@ -120,7 +120,7 @@ function MemberSlot({ idx, member, onChange, readOnly }) {
             {Object.entries(member.skills).map(([skill, lvl]) => (
               <span
                 key={skill}
-                className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 border border-indigo-105 text-indigo-700 font-medium"
+                className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 font-medium"
                 title={`${skill}: ${lvl}/5`}
               >
                 {skill} · <b>{lvl}</b>
@@ -240,7 +240,7 @@ function ProblemCard({ rank, p, scoring, mark = { votes: {}, our_pick: false, no
     if (!isFocusedRef.current) {
       setLocalNotes(mark.notes || "");
     }
-  }, [mark.notes]);
+  }, [p.id, mark.notes]);
 
   const timerRef = useRef(null);
   const handleNotesChange = (val) => {
@@ -278,7 +278,7 @@ function ProblemCard({ rank, p, scoring, mark = { votes: {}, our_pick: false, no
             <div className="flex items-center gap-1.5">
               {mark.our_pick && <span className="text-amber-500 font-bold text-sm" title="Our Pick">⭐</span>}
               {voteCount > 0 && (
-                <span className="text-gray-500 text-[10px] font-semibold bg-gray-150 px-1.5 py-0.5 rounded-full" title={`Votes: ${voters.join(', ')}`}>
+                <span className="text-gray-500 text-[10px] font-semibold bg-gray-100 px-1.5 py-0.5 rounded-full" title={`Votes: ${voters.join(', ')}`}>
                   👍 {voteCount}
                 </span>
               )}
@@ -356,12 +356,13 @@ function ProblemCard({ rank, p, scoring, mark = { votes: {}, our_pick: false, no
                 <span>{voteCount > 0 ? `${voteCount} Vote${voteCount > 1 ? "s" : ""}` : "Vote"}</span>
               </button>
 
-              <label className="flex items-center gap-1.5 font-semibold text-gray-700 cursor-pointer select-none">
+              <label className={`flex items-center gap-1.5 font-semibold select-none ${!myName ? "opacity-50 cursor-not-allowed" : "cursor-pointer text-gray-700"}`}>
                 <input
                   type="checkbox"
+                  disabled={!myName}
                   checked={mark.our_pick || false}
                   onChange={handlePick}
-                  className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-550"
+                  className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
                 />
                 <span>⭐ Our Pick</span>
               </label>
@@ -530,7 +531,7 @@ export default function App() {
   // If cloud is active, verify that our local slot matches what's in Supabase,
   // or handle slot ownership.
   useEffect(() => {
-    if (isCloud && me) {
+    if (isCloud && teamReady && me) {
       const mySlot = members.find((m) => m.slot === me.slot);
       if (mySlot && mySlot.name && mySlot.name !== me.name) {
         localStorage.removeItem("sih_me");
@@ -540,7 +541,7 @@ export default function App() {
         saveSlotNow(me.slot, { name: me.name });
       }
     }
-  }, [members, me, saveSlotNow]);
+  }, [isCloud, teamReady, members, me, saveSlotNow]);
 
   const activeMembers = members.filter((m) => m.name.trim() || (m.skills && Object.keys(m.skills).length));
 
