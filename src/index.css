@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+.flip-card {
+  perspective: 1200px;
+}
+.flip-inner {
+  transform-style: preserve-3d;
+  transition: transform 400ms;
+  position: relative;
+}
+.flipped .flip-inner {
+  transform: rotateY(180deg);
+}
+.face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.back-face {
+  transform: rotateY(180deg);
+}
