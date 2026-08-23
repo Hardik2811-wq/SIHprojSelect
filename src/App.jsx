@@ -107,85 +107,105 @@ function MemberSlot({ idx, member, onChange, readOnly }) {
     update({ skills });
   };
 
+  const isClaimed = !!(member.name && member.name.trim());
+
   if (readOnly) {
     const hasSkills = Object.keys(member.skills || {}).length > 0;
     return (
-      <div className="border rounded-xl p-3 bg-gray-50/50 shadow-sm border-gray-200">
-        <div className="font-bold text-sm text-gray-700 mb-2 truncate flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-gray-400"></span>
-          {member.name || `Slot ${idx + 1} (Empty)`}
+      <div className="border border-slate-100 rounded-2xl p-4 bg-slate-50/40 shadow-sm transition hover:shadow-md duration-200 flex flex-col justify-between min-h-[140px]">
+        <div>
+          <div className="font-semibold text-xs text-slate-400 uppercase tracking-wider mb-1">
+            Slot {idx + 1}
+          </div>
+          <div className="font-bold text-base text-slate-800 mb-3 truncate flex items-center gap-2">
+            <span className={`w-2.5 h-2.5 rounded-full ${isClaimed ? "bg-indigo-400 animate-pulse" : "bg-slate-300"}`}></span>
+            {isClaimed ? member.name : "Available Slot"}
+          </div>
         </div>
         {hasSkills ? (
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1.5 mt-auto">
             {Object.entries(member.skills).map(([skill, lvl]) => (
               <span
                 key={skill}
-                className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 font-medium"
+                className="text-[10px] px-2.5 py-1 rounded-lg bg-indigo-50/60 border border-indigo-100/50 text-indigo-700 font-semibold transition hover:bg-indigo-50"
                 title={`${skill}: ${lvl}/5`}
               >
-                {skill} · <b>{lvl}</b>
+                {skill} · <span className="text-indigo-850 font-extrabold">{lvl}</span>
               </span>
             ))}
           </div>
         ) : (
-          <span className="text-[11px] text-gray-400 italic">No skills selected</span>
+          <span className="text-xs text-slate-400 italic mt-auto">No skills added yet</span>
         )}
       </div>
     );
   }
 
   return (
-    <div className="border rounded-xl p-3 bg-white shadow-sm border-indigo-200 ring-1 ring-indigo-50/50">
-      {member.name ? (
-        <div className="font-bold text-base text-indigo-900 mb-2 truncate flex items-center justify-between">
-          <div className="flex items-center gap-1.5 truncate">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" title="Active"></span>
-            <span className="truncate">{member.name}</span>
-          </div>
-          <span className="text-[11px] font-medium text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200 shrink-0 ml-2">
+    <div className="border border-indigo-200 rounded-2xl p-5 bg-white shadow-md ring-2 ring-indigo-500/10 flex flex-col justify-between min-h-[180px]">
+      <div>
+        <div className="flex justify-between items-center mb-3">
+          <span className="text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-lg uppercase tracking-wider">
             Slot {idx + 1} (You)
           </span>
+          {isClaimed && (
+            <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-semibold bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-lg">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              Active Session
+            </div>
+          )}
         </div>
-      ) : (
-        <>
-          <div className="flex justify-between items-center mb-1">
-            <label className="text-xs font-semibold text-indigo-700">Slot {idx + 1} (You)</label>
+        
+        {isClaimed ? (
+          <div className="font-extrabold text-lg text-slate-800 tracking-tight truncate mb-4">
+            {member.name}
           </div>
-          <input
-            className="w-full border rounded px-2 py-1 text-sm mb-2 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
-            placeholder={`Enter your name`}
-            value={member.name}
-            onChange={(e) => update({ name: e.target.value })}
-          />
-        </>
-      )}
-      <div className="flex flex-wrap gap-1 mb-2">
-        {SKILLS.map((s) => {
-          const has = member.skills && member.skills[s] != null;
-          return (
-            <button
-              key={s}
-              onClick={() => toggleSkill(s)}
-              className={`text-[11px] px-2 py-0.5 rounded-full border transition ${
-                has ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-gray-600 hover:bg-gray-100"
-              }`}
-            >
-              {s}
-            </button>
-          );
-        })}
+        ) : (
+          <div className="mb-4">
+            <label className="text-xs font-bold text-slate-500 block mb-1">Your Name</label>
+            <input
+              className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition"
+              placeholder="e.g. Alice"
+              value={member.name}
+              onChange={(e) => update({ name: e.target.value })}
+            />
+          </div>
+        )}
       </div>
-      {Object.entries(member.skills || {}).map(([skill, lvl]) => (
-        <div key={skill} className="flex items-center gap-2 text-xs mb-1">
-          <span className="flex-1 truncate" title={skill}>{skill}</span>
-          <input
-            type="range" min="1" max="5" value={lvl}
-            onChange={(e) => update({ skills: { ...member.skills, [skill]: Number(e.target.value) } })}
-            className="w-24 accent-indigo-600"
-          />
-          <span className="w-4 text-center font-semibold">{lvl}</span>
+
+      <div>
+        <label className="text-xs font-bold text-slate-500 block mb-2">My Skills & Expertise</label>
+        <div className="flex flex-wrap gap-1.5 mb-4">
+          {SKILLS.map((s) => {
+            const has = member.skills && member.skills[s] != null;
+            return (
+              <button
+                key={s}
+                onClick={() => toggleSkill(s)}
+                className={`text-[11px] px-3 py-1 rounded-xl border font-medium transition cursor-pointer duration-150 ${
+                  has
+                    ? "bg-indigo-600 text-white border-indigo-600 shadow-sm shadow-indigo-100"
+                    : "bg-slate-50 text-slate-600 border-slate-200/80 hover:bg-slate-100"
+                }`}
+              >
+                {s}
+              </button>
+            );
+          })}
         </div>
-      ))}
+
+        {Object.entries(member.skills || {}).map(([skill, lvl]) => (
+          <div key={skill} className="flex items-center gap-3 text-xs bg-slate-50/60 p-2.5 rounded-xl border border-slate-100 mb-2 transition hover:bg-slate-50">
+            <span className="flex-1 font-semibold text-slate-700 truncate" title={skill}>{skill}</span>
+            <input
+              type="range" min="1" max="5" value={lvl}
+              onChange={(e) => update({ skills: { ...member.skills, [skill]: Number(e.target.value) } })}
+              className="w-28 accent-indigo-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
+            />
+            <span className="w-5 text-center font-extrabold text-indigo-700">{lvl}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -193,24 +213,29 @@ function MemberSlot({ idx, member, onChange, readOnly }) {
 function MultiSelect({ label, options, selected, setSelected }) {
   const allSelected = selected.size === options.length;
   return (
-    <div className="relative inline-block">
+    <div className="relative inline-block text-left">
       <details className="group">
-        <summary className="cursor-pointer list-none border rounded-lg px-3 py-1.5 text-sm bg-white hover:bg-gray-50 select-none">
-          {label}: {allSelected ? "All" : `${selected.size} selected`} ▾
+        <summary className="cursor-pointer list-none border border-slate-200/80 rounded-xl px-4 py-2 text-sm bg-white hover:bg-slate-50 focus:outline-none select-none transition duration-150 flex items-center gap-1.5 font-medium text-slate-700 shadow-sm">
+          <span>{label}:</span>
+          <span className="text-indigo-600 font-bold">
+            {allSelected ? "All" : `${selected.size} Selected`}
+          </span>
+          <span className="text-xs text-slate-400 group-open:rotate-180 transition-transform duration-200 ml-0.5">▼</span>
         </summary>
-        <div className="absolute z-20 mt-1 max-h-72 overflow-auto border rounded-lg bg-white shadow-lg p-2 w-64 left-0 sm:left-auto right-0 max-w-[calc(100vw-2rem)]">
+        <div className="absolute z-20 mt-1.5 max-h-72 overflow-auto border border-slate-100 rounded-xl bg-white shadow-xl p-2 w-64 left-0 sm:left-auto right-0 max-w-[calc(100vw-2rem)] ring-1 ring-slate-900/5 divide-y divide-slate-50 animate-in fade-in slide-in-from-top-1 duration-150">
           {options.map((o) => (
-            <label key={o} className="flex items-center gap-2 px-1 py-0.5 text-sm rounded hover:bg-gray-50 cursor-pointer">
+            <label key={o} className="flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-indigo-50/50 cursor-pointer transition text-slate-700 hover:text-indigo-900">
               <input
                 type="checkbox"
                 checked={selected.has(o)}
+                className="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 focus:ring-offset-0 cursor-pointer"
                 onChange={() => {
                   const next = new Set(selected);
                   next.has(o) ? next.delete(o) : next.add(o);
                   setSelected(next);
                 }}
               />
-              {o}
+              <span className="font-medium truncate">{o}</span>
             </label>
           ))}
         </div>
@@ -223,8 +248,8 @@ function ProblemCard({ rank, p, scoring, mark = { votes: {}, our_pick: false, no
   const [flipped, setFlipped] = useState(false);
   const q = quadrantMeta[quadrantOf(p)];
   const diffCls =
-    p.difficulty === "Hard" ? "bg-red-100 text-red-700" :
-    p.difficulty === "Medium" ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700";
+    p.difficulty === "Hard" ? "bg-rose-50 text-rose-700 border-rose-100" :
+    p.difficulty === "Medium" ? "bg-amber-50 text-amber-700 border-amber-100" : "bg-emerald-50 text-emerald-700 border-emerald-100";
 
   const isFocusedRef = useRef(false);
 
@@ -284,45 +309,54 @@ function ProblemCard({ rank, p, scoring, mark = { votes: {}, our_pick: false, no
       }}
       style={{ outline: "none" }}
     >
-      <div className="flip-inner w-full h-full cursor-pointer focus-within:ring-2 ring-indigo-400 rounded-xl">
+      <div className="flip-inner w-full h-full cursor-pointer focus-within:ring-2 ring-indigo-400 rounded-2xl">
         {/* FRONT */}
-        <div className="face absolute inset-0 bg-white border rounded-xl shadow-sm p-4 flex flex-col">
-          <div className="flex justify-between items-start">
-            <span className="font-bold text-indigo-700">#{rank} · {p.id}</span>
-            <div className="flex items-center gap-1.5">
-              {mark.our_pick && <span className="text-amber-500 font-bold text-sm" title="Our Pick">⭐</span>}
-              {voteCount > 0 && (
-                <span className="text-gray-500 text-[10px] font-semibold bg-gray-100 px-1.5 py-0.5 rounded-full" title={`Votes: ${voters.join(', ')}`}>
-                  👍 {voteCount}
-                </span>
-              )}
-              <span className="text-gray-300">⇄</span>
+        <div className="face absolute inset-0 bg-white border border-slate-100 rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.03)] hover:shadow-md transition duration-300 p-5 flex flex-col justify-between">
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-xs font-bold text-indigo-600 bg-indigo-50/70 px-2 py-0.5 rounded-lg">#{rank} · {p.id}</span>
+              <div className="flex items-center gap-1.5">
+                {mark.our_pick && <span className="text-amber-500 text-sm" title="Our Pick">⭐</span>}
+                {voteCount > 0 && (
+                  <span className="text-slate-500 text-[10px] font-bold bg-slate-100/80 px-2 py-0.5 rounded-lg border border-slate-200/50" title={`Votes: ${voters.join(', ')}`}>
+                    👍 {voteCount}
+                  </span>
+                )}
+                <span className="text-slate-300 font-bold hover:text-slate-400 text-sm">⇄</span>
+              </div>
             </div>
-          </div>
-          <h3 className="mt-1 font-semibold text-sm leading-snug line-clamp-2">{p.title}</h3>
-          <p className="text-xs text-gray-500 mt-1 truncate">{p.organization}</p>
-          <div className="mt-2 flex flex-wrap gap-1">
-            <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">{p.theme}</span>
-            <span className={`text-[11px] px-2 py-0.5 rounded-full ${diffCls}`}>{p.difficulty}</span>
-          </div>
-          {missingSkills && missingSkills.length > 0 && (
-            <div className="mt-1.5 flex flex-wrap gap-1">
-              {missingSkills.slice(0, 3).map(s => (
-                <span key={s} className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200" title={`No team member covers: ${s}`}>⚠ {s}</span>
-              ))}
-              {missingSkills.length > 3 && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-50 text-red-500">+{missingSkills.length - 3} gaps</span>
-              )}
+            <h3 className="font-extrabold text-sm text-slate-800 leading-snug line-clamp-2 tracking-tight">{p.title}</h3>
+            <p className="text-[11px] font-semibold text-slate-400 mt-1 truncate uppercase tracking-wider">{p.organization}</p>
+            
+            <div className="mt-3 flex flex-wrap gap-1">
+              <span className="text-[10px] font-bold px-2 py-1 rounded-lg bg-slate-50 border border-slate-250/30 text-slate-500">{p.theme}</span>
+              <span className={`text-[10px] font-bold px-2 py-1 rounded-lg border ${diffCls}`}>{p.difficulty}</span>
             </div>
-          )}
-          <div className="mt-auto flex items-center gap-3">
+            
+            {missingSkills && missingSkills.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-1">
+                {missingSkills.slice(0, 2).map(s => (
+                  <span key={s} className="text-[9px] font-extrabold px-2 py-0.5 rounded-lg bg-rose-50 text-rose-600 border border-rose-100" title={`No team member covers: ${s}`}>⚠ {s}</span>
+                ))}
+                {missingSkills.length > 2 && (
+                  <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-lg bg-rose-100/50 text-rose-500 border border-rose-100">+{missingSkills.length - 2} gaps</span>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3 pt-3 border-t border-slate-50 mt-auto">
             <ScoreRing value={scoring.score} />
             <div className="min-w-0 flex-1">
-              <div className={`inline-block text-[11px] px-2 py-0.5 rounded-full border ${q.cls}`}>{q.label}</div>
-              <p className="text-[11px] text-gray-400 mt-1">click to flip ↻</p>
+              <div className={`inline-block text-[10px] font-extrabold px-2.5 py-1 rounded-lg border ${q.cls}`}>{q.label}</div>
+              <p className="text-[10px] text-slate-400 mt-1 font-semibold">click to flip ↻</p>
             </div>
             <button
-              className={`no-flip shrink-0 w-7 h-7 rounded-lg border-2 flex items-center justify-center text-xs transition ${isComparing ? "bg-indigo-600 border-indigo-600 text-white" : "border-gray-300 text-gray-400 hover:border-indigo-400 hover:text-indigo-500"}`}
+              className={`no-flip shrink-0 w-8 h-8 rounded-xl border flex items-center justify-center text-xs font-bold transition duration-200 cursor-pointer ${
+                isComparing 
+                  ? "bg-indigo-600 border-indigo-650 text-white shadow-sm shadow-indigo-100" 
+                  : "bg-white border-slate-200 text-slate-400 hover:border-indigo-400 hover:text-indigo-600"
+              }`}
               title={isComparing ? "Remove from comparison" : "Add to comparison"}
               onClick={(e) => { e.stopPropagation(); onToggleCompare(p.id); }}
             >
@@ -332,54 +366,67 @@ function ProblemCard({ rank, p, scoring, mark = { votes: {}, our_pick: false, no
         </div>
 
         {/* BACK */}
-        <div className="face back-face absolute inset-0 bg-white border rounded-xl shadow-md p-3 flex flex-col text-xs overflow-hidden">
-          <div className="flex justify-between items-start gap-2">
-            <h4 className="font-semibold leading-snug line-clamp-2">{p.title}</h4>
+        <div className="face back-face absolute inset-0 bg-white border border-slate-100 rounded-2xl shadow-lg p-4 flex flex-col justify-between text-xs overflow-hidden">
+          <div className="flex justify-between items-start gap-3 mb-2">
+            <h4 className="font-extrabold text-slate-800 leading-snug line-clamp-2 tracking-tight text-xs">{p.title}</h4>
             <button
-              className="shrink-0 no-flip border rounded px-2 py-0.5 hover:bg-gray-100"
+              className="shrink-0 no-flip border border-slate-200 text-slate-400 hover:text-slate-600 rounded-lg w-6 h-6 flex items-center justify-center font-bold hover:bg-slate-50 transition cursor-pointer"
               onClick={(e) => { e.stopPropagation(); setFlipped(false); }}
             >✕</button>
           </div>
-          <div className="overflow-y-auto mt-1 pr-1 flex-1 space-y-2">
-            <p className="text-gray-600 italic">{p.problemSummary}</p>
+          
+          <div className="overflow-y-auto pr-1 flex-1 space-y-3 custom-scrollbar text-[11px]">
+            <p className="text-slate-500 italic leading-relaxed">{p.problemSummary}</p>
+            
             <div>
-              <b>Skills:</b>{" "}
-              {scoring.details.map((d) => (
-                <span
-                  key={d.skill}
-                  title={d.best ? `${d.best.member} (${d.best.level}/5)` : d.covered ? "" : "not covered"}
-                  className={`inline-block m-0.5 px-1.5 py-0.5 rounded-full ${
-                    d.covered ? "bg-green-100 text-green-800" : "bg-gray-200 text-gray-500"
-                  }`}
-                >
-                  {d.skill}{d.best ? ` ·${d.best.member}` : ""}
-                </span>
-              ))}
+              <div className="font-bold text-slate-700 mb-1">Required Skills:</div>
+              <div className="flex flex-wrap gap-1">
+                {scoring.details.map((d) => (
+                  <span
+                    key={d.skill}
+                    title={d.best ? `${d.best.member} (${d.best.level}/5)` : d.covered ? "" : "not covered"}
+                    className={`inline-block px-2 py-0.5 rounded-lg font-medium border text-[10px] ${
+                      d.covered 
+                        ? "bg-emerald-50 border-emerald-100 text-emerald-700" 
+                        : "bg-slate-100 border-slate-200 text-slate-500"
+                    }`}
+                  >
+                    {d.skill}{d.best ? ` · ${d.best.member}` : ""}
+                  </span>
+                ))}
+              </div>
             </div>
+
             <div>
-              <b>Tech stack:</b>
-              <ul className="list-disc ml-4">
-                {p.techStack.slice(0, 6).map((t) => <li key={t}>{t}</li>)}
-              </ul>
+              <div className="font-bold text-slate-700 mb-1">Tech Stack:</div>
+              <div className="flex flex-wrap gap-1">
+                {p.techStack.slice(0, 6).map((t) => (
+                  <span key={t} className="px-2 py-0.5 rounded-lg bg-indigo-50 border border-indigo-100/50 text-indigo-700 text-[10px] font-semibold">{t}</span>
+                ))}
+              </div>
             </div>
-            <div className="bg-indigo-50 border-l-4 border-indigo-400 p-2 rounded">
-              <b>Worked example:</b> {p.workedExample}
+
+            <div className="bg-indigo-50/50 border-l-4 border-indigo-500 p-2.5 rounded-r-xl">
+              <span className="font-bold text-indigo-900 block mb-0.5">Worked Example:</span>
+              <span className="text-indigo-950 block">{p.workedExample}</span>
             </div>
-            <div className="max-h-28 overflow-y-auto whitespace-pre-wrap text-gray-600 no-flip" onClick={(e) => e.stopPropagation()}>
-              <b>Description:</b> {p.description}
+
+            <div className="whitespace-pre-wrap text-slate-500 no-flip" onClick={(e) => e.stopPropagation()}>
+              <span className="font-bold text-slate-700 block mb-0.5">Full Description:</span>
+              <span className="leading-relaxed">{p.description}</span>
             </div>
           </div>
 
           {/* Collaboration section */}
-          <div className="border-t pt-2 mt-2 space-y-1.5 no-flip shrink-0" onClick={(e) => e.stopPropagation()}>
+          <div className="border-t border-slate-100 pt-3 mt-3 space-y-2 no-flip shrink-0" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between gap-4">
               <button
                 onClick={handleVote}
                 disabled={!myName}
-                className={`flex items-center gap-1 px-2 py-1 rounded border text-xs font-semibold transition ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition duration-150 cursor-pointer ${
                   hasVoted
-                    ? "bg-indigo-100 text-indigo-700 border-indigo-300"
-                    : "bg-white hover:bg-gray-50 text-gray-600 border-gray-300 disabled:opacity-50"
+                    ? "bg-indigo-600 border-indigo-600 text-white shadow-sm shadow-indigo-100"
+                    : "bg-white hover:bg-slate-50 text-slate-600 border-slate-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 }`}
                 title={!myName ? "Select your slot first to vote" : voters.length ? `Voters: ${voters.join(", ")}` : "Vote"}
               >
@@ -387,13 +434,13 @@ function ProblemCard({ rank, p, scoring, mark = { votes: {}, our_pick: false, no
                 <span>{voteCount > 0 ? `${voteCount} Vote${voteCount > 1 ? "s" : ""}` : "Vote"}</span>
               </button>
 
-              <label className={`flex items-center gap-1.5 font-semibold select-none ${!myName ? "opacity-50 cursor-not-allowed" : "cursor-pointer text-gray-700"}`}>
+              <label className={`flex items-center gap-2 font-bold select-none text-xs ${!myName ? "opacity-50 cursor-not-allowed" : "cursor-pointer text-slate-700 hover:text-indigo-600"}`}>
                 <input
                   type="checkbox"
                   disabled={!myName}
                   checked={mark.our_pick || false}
                   onChange={handlePick}
-                  className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                  className="w-4 h-4 rounded text-indigo-600 border-slate-350 focus:ring-indigo-550 focus:ring-offset-0 cursor-pointer"
                 />
                 <span>⭐ Our Pick</span>
               </label>
@@ -410,7 +457,7 @@ function ProblemCard({ rank, p, scoring, mark = { votes: {}, our_pick: false, no
                   isFocusedRef.current = false;
                   handleNotesBlur();
                 }}
-                className="w-full border rounded p-1 text-[11px] h-10 resize-none focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                className="w-full border border-slate-200 rounded-xl p-2 text-[11px] h-12 resize-none focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50/30 hover:bg-slate-50/80 focus:bg-white transition"
               />
             </div>
           </div>
@@ -489,22 +536,33 @@ function SlotPickerModal({ members, onSelect, refetch }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-slate-100">
-        <h2 className="text-xl font-bold text-indigo-900 flex items-center gap-2">
-          <span>🤝</span> Realtime Team Sync
-        </h2>
-        <p className="text-xs text-gray-500 leading-relaxed">
+    <div className="fixed inset-0 bg-slate-900/70 flex items-center justify-center z-50 p-4 backdrop-blur-md">
+      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-slate-100/80 animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-lg text-indigo-600">
+            👥
+          </div>
+          <div>
+            <h2 className="text-lg font-extrabold text-slate-800 tracking-tight">
+              Realtime Team Sync
+            </h2>
+            <p className="text-[11px] text-slate-400 font-semibold tracking-wide uppercase">
+              Smart India Hackathon 2026
+            </p>
+          </div>
+        </div>
+        
+        <p className="text-xs text-slate-500 leading-relaxed font-medium">
           Select a slot to join. Empty slots require setting a password. Occupied slots require entering the slot password to access.
         </p>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 text-xs px-3 py-2 rounded-lg font-medium flex items-center gap-1.5">
+          <div className="bg-rose-50 border border-rose-100 text-rose-700 text-xs px-3.5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-sm">
             <span>⚠️</span> {error}
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-2.5">
           {members.map((m) => {
             const occupied = !!(m.name && m.name.trim());
             const isSelected = selectedSlot === m.slot;
@@ -513,21 +571,25 @@ function SlotPickerModal({ members, onSelect, refetch }) {
                 key={m.slot}
                 disabled={joining}
                 onClick={() => handleSlotClick(m)}
-                className={`p-3 border rounded-xl text-left transition duration-200 flex flex-col justify-between h-20 cursor-pointer ${
+                className={`p-3.5 border rounded-xl text-left transition duration-200 flex flex-col justify-between h-20 cursor-pointer shadow-sm ${
                   isSelected
-                    ? "border-indigo-600 bg-indigo-50/50 ring-2 ring-indigo-500 shadow-sm"
+                    ? "border-indigo-600 bg-indigo-50/40 ring-2 ring-indigo-500/20 shadow-sm"
                     : occupied
-                    ? "border-slate-200 bg-slate-50 hover:border-indigo-300 hover:bg-indigo-50/20"
-                    : "border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/10"
+                    ? "border-slate-200/80 bg-slate-50/70 hover:border-slate-300 hover:bg-slate-50"
+                    : "border-slate-200 bg-white hover:border-indigo-300 hover:bg-indigo-50/10"
                 }`}
               >
                 <div className="flex justify-between items-center w-full">
-                  <span className={`font-semibold text-sm ${isSelected ? "text-indigo-700" : "text-slate-700"}`}>
+                  <span className={`font-bold text-xs ${isSelected ? "text-indigo-700" : "text-slate-500"}`}>
                     Slot {m.slot + 1}
                   </span>
-                  {occupied && <span className="text-[10px] bg-slate-200 text-slate-700 font-semibold px-1.5 py-0.5 rounded">🔒 Protected</span>}
+                  {occupied && (
+                    <span className="text-[9px] bg-slate-200 text-slate-600 font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider">
+                      🔒 Secured
+                    </span>
+                  )}
                 </div>
-                <span className="text-xs text-slate-500 truncate w-full">
+                <span className={`text-xs truncate w-full font-bold ${occupied ? "text-slate-700" : "text-slate-400 italic"}`}>
                   {occupied ? `👤 ${m.name}` : "✨ Available"}
                 </span>
               </button>
@@ -536,20 +598,20 @@ function SlotPickerModal({ members, onSelect, refetch }) {
         </div>
 
         {selectedSlot !== null && (
-          <div className="space-y-3 pt-1 border-t border-slate-100">
+          <div className="space-y-3 pt-3 border-t border-slate-100">
             {isOccupied ? (
-              <div className="bg-indigo-50/60 border border-indigo-100 rounded-xl p-3 space-y-2">
-                <div className="text-xs font-semibold text-indigo-900 flex items-center justify-between">
+              <div className="bg-indigo-50/50 border border-indigo-100/50 rounded-xl p-3.5 space-y-3 shadow-sm">
+                <div className="text-xs font-bold text-indigo-900 flex items-center justify-between">
                   <span>Access Slot {selectedSlot + 1}</span>
-                  <span className="text-indigo-600 font-bold">👤 {targetSlot.name}</span>
+                  <span className="text-indigo-600 font-extrabold uppercase bg-white border border-indigo-100 px-2 py-0.5 rounded">👤 {targetSlot.name}</span>
                 </div>
                 <div>
-                  <label className="text-[11px] font-semibold text-slate-600 block mb-1">Enter Password for {targetSlot.name}</label>
+                  <label className="text-[11px] font-bold text-slate-500 block mb-1">Enter Password for {targetSlot.name}</label>
                   <input
                     type="password"
                     maxLength={30}
                     disabled={joining}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 focus:outline-none bg-white"
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 focus:outline-none bg-white font-medium"
                     placeholder="Enter password..."
                     value={pin}
                     onChange={(e) => setPin(e.target.value)}
@@ -558,26 +620,26 @@ function SlotPickerModal({ members, onSelect, refetch }) {
                 </div>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div>
-                  <label className="text-xs font-semibold text-slate-600 block mb-1">Your Name</label>
+                  <label className="text-xs font-bold text-slate-500 block mb-1">Your Name</label>
                   <input
                     type="text"
                     maxLength={30}
                     disabled={joining}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 focus:outline-none font-medium"
                     placeholder="e.g. Alice"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-600 block mb-1">Set Password (to protect your slot)</label>
+                  <label className="text-xs font-bold text-slate-500 block mb-1">Set Password (to protect your slot)</label>
                   <input
                     type="password"
                     maxLength={30}
                     disabled={joining}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 focus:outline-none font-medium"
                     placeholder="Set a slot password..."
                     value={pin}
                     onChange={(e) => setPin(e.target.value)}
@@ -593,7 +655,7 @@ function SlotPickerModal({ members, onSelect, refetch }) {
           <button
             disabled={selectedSlot === null || (isOccupied ? !pin.trim() : (!name.trim() || !pin.trim())) || joining}
             onClick={handleSelect}
-            className="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed transition duration-200 flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-extrabold hover:bg-indigo-700 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed transition duration-150 flex items-center justify-center gap-2 cursor-pointer shadow-sm hover:shadow"
           >
             {joining ? (
               <>
@@ -825,25 +887,34 @@ export default function App() {
       )}
 
       {/* Header */}
-      <header className="bg-indigo-700 text-white px-4 py-3 flex flex-wrap items-center gap-3 sticky top-0 z-30 shadow">
-        <div className="flex items-center gap-2">
-          <h1 className="font-bold text-lg">SIH 2026 Skill-Match &amp; Ranking</h1>
-          {!isCloud && (
-            <span className="bg-amber-500/20 text-amber-200 text-[10px] px-2 py-0.5 rounded-full border border-amber-500/30">
-              Offline Mode
-            </span>
-          )}
+      <header className="bg-slate-900 border-b border-slate-800 text-white px-6 py-4 flex flex-wrap items-center gap-4 sticky top-0 z-30 shadow-md backdrop-blur-md bg-opacity-95">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-500 to-violet-600 flex items-center justify-center font-extrabold text-sm text-white shadow-md shadow-indigo-500/20">
+            S
+          </div>
+          <div>
+            <h1 className="font-extrabold text-base tracking-tight text-slate-100 flex items-center gap-2">
+              SIH 2026 Skill-Match &amp; Ranking
+              {!isCloud && (
+                <span className="bg-amber-500/10 text-amber-400 text-[10px] font-bold px-2 py-0.5 rounded-lg border border-amber-500/20">
+                  Offline Mode
+                </span>
+              )}
+            </h1>
+            <p className="text-[11px] text-slate-400 font-semibold tracking-wide">
+              {PROBLEMS.length} Software Problems · Deadline 20 Sep 2026
+            </p>
+          </div>
         </div>
-        <span className="text-xs opacity-80">{PROBLEMS.length} software problems · deadline 20 Sep 2026</span>
 
         {/* Presence Indicator */}
         {isCloud && online.length > 0 && (
-          <div className="flex items-center gap-1.5 ml-4">
-            <span className="text-[10px] text-indigo-200 uppercase tracking-wider font-bold">Online:</span>
-            <div className="flex flex-wrap gap-1">
+          <div className="hidden lg:flex items-center gap-2 ml-6 border-l border-slate-800 pl-6">
+            <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Online</span>
+            <div className="flex flex-wrap gap-1.5">
               {online.map((name) => (
-                <span key={name} className="flex items-center gap-1 bg-indigo-850 px-2 py-0.5 rounded-full text-[11px] font-medium border border-indigo-650/50">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span key={name} className="flex items-center gap-1.5 bg-slate-800/80 px-2.5 py-1 rounded-xl text-xs font-semibold border border-slate-700/50 text-slate-300">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                   {name}
                 </span>
               ))}
@@ -851,29 +922,44 @@ export default function App() {
           </div>
         )}
 
-        <div className="ml-auto flex items-center gap-3 text-xs">
+        <div className="ml-auto flex items-center gap-2.5 text-xs">
           {/* Active Slot Profile */}
           {isCloud && me && (
-            <div className="flex items-center gap-2 bg-indigo-800 px-3 py-1 rounded-lg border border-indigo-600">
-              <span>👤 <b>{me.name}</b> (Slot {me.slot + 1})</span>
+            <div className="flex items-center gap-3 bg-slate-800/90 border border-slate-750 px-3 py-1.5 rounded-xl shadow-sm">
+              <span className="text-slate-300 font-medium flex items-center gap-1">
+                <span className="text-slate-400 text-sm">👤</span> 
+                <b>{me.name}</b> 
+                <span className="text-slate-500 text-[10px] font-bold uppercase bg-slate-700 px-1.5 py-0.5 rounded">Slot {me.slot + 1}</span>
+              </span>
               <button
                 onClick={() => {
                   localStorage.removeItem("sih_me");
                   setMe(null);
                 }}
-                className="underline hover:text-indigo-200 font-medium cursor-pointer"
+                className="text-indigo-400 hover:text-indigo-300 font-semibold transition cursor-pointer hover:underline"
               >
                 Switch slot
               </button>
             </div>
           )}
 
-          <button onClick={() => setShowOnboarding((v) => !v)} className="border rounded px-3 py-1 hover:bg-indigo-600 cursor-pointer">
-            {showOnboarding ? "Hide team panel" : "Edit team"}
+          <button 
+            onClick={() => setShowOnboarding((v) => !v)} 
+            className="border border-slate-700/60 rounded-xl px-3.5 py-2 font-bold hover:bg-slate-800 transition cursor-pointer text-slate-200"
+          >
+            {showOnboarding ? "Hide Team Panel" : "Edit Team"}
           </button>
-          <button onClick={exportTeam} className="border rounded px-3 py-1 hover:bg-indigo-600 cursor-pointer">Export team</button>
-          <label className="border rounded px-3 py-1 hover:bg-indigo-600 cursor-pointer">
-            Import team<input type="file" accept=".json" hidden onChange={importTeam} />
+          
+          <button 
+            onClick={exportTeam} 
+            className="border border-slate-700/60 rounded-xl px-3.5 py-2 font-bold hover:bg-slate-800 transition cursor-pointer text-slate-200"
+          >
+            Export Team
+          </button>
+          
+          <label className="border border-slate-700/60 rounded-xl px-3.5 py-2 font-bold hover:bg-slate-800 transition cursor-pointer text-slate-200 flex items-center gap-1.5">
+            Import Team
+            <input type="file" accept=".json" hidden onChange={importTeam} />
           </label>
         </div>
       </header>
@@ -902,77 +988,109 @@ export default function App() {
         )}
 
         {/* Coverage strip */}
-        <section className="bg-white border rounded-xl p-3 shadow-sm">
-          <h2 className="text-sm font-semibold mb-2">Team Skill Coverage (max expertise · members)</h2>
+        <section className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.02)]">
+          <h2 className="text-sm font-extrabold text-slate-700 mb-3 flex items-center gap-1.5 tracking-tight">
+            <span>📊</span> Team Skill Coverage <span className="text-slate-400 font-semibold text-xs">(Max Expertise · Members)</span>
+          </h2>
           {coverage.size === 0 ? (
-            <p className="text-xs text-gray-500">No skills entered yet — scores will use the mismatch cap until you add team skills.</p>
+            <p className="text-xs text-slate-400 italic">No skills entered yet — scores will use the mismatch cap until you add team skills.</p>
           ) : (
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-2">
               {[...coverage.entries()].sort((a, b) => b[1].max - a[1].max).map(([skill, c]) => (
-                <span key={skill} className="text-xs px-2 py-1 rounded-full bg-indigo-50 border border-indigo-200">
-                  {skill} · <b>{c.max}/5</b> × {c.count}
+                <span key={skill} className="text-xs px-3 py-1.5 rounded-xl bg-indigo-50/60 border border-indigo-100/60 text-indigo-950 font-bold flex items-center gap-1.5 shadow-sm transition hover:bg-indigo-50">
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                  {skill} · <span className="text-indigo-600">{c.max}/5</span> <span className="text-slate-400 font-medium">({c.count} {c.count > 1 ? "members" : "member"})</span>
                 </span>
               ))}
             </div>
           )}
         </section>
 
-        {/* Search bar */}
-        <section className="flex items-center gap-2">
-          <div className="relative flex-1 max-w-md">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
+        {/* Search & Sort Controls */}
+        <section className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="relative flex-1">
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-base">🔍</span>
             <input
               type="text"
-              placeholder="Search by PS ID, title, org, skill, tech..."
+              placeholder="Search by PS ID, title, organization, required skills, tech stack..."
               value={searchQ}
               onChange={(e) => setSearchQ(e.target.value)}
-              className="w-full border rounded-xl pl-9 pr-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-400 focus:outline-none shadow-sm"
+              className="w-full border border-slate-250/80 rounded-xl pl-10 pr-9 py-2.5 text-sm bg-white hover:border-slate-350 focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 focus:outline-none shadow-sm transition duration-150 font-medium text-slate-700 placeholder-slate-400"
             />
             {searchQ && (
               <button
                 onClick={() => setSearchQ("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs cursor-pointer"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 font-extrabold text-xs cursor-pointer w-5 h-5 rounded-full hover:bg-slate-100 flex items-center justify-center transition"
               >✕</button>
             )}
           </div>
-          <div className="flex items-center bg-white border rounded-xl shadow-sm overflow-hidden text-sm">
+          
+          <div className="flex items-center bg-white border border-slate-250/80 rounded-xl shadow-sm overflow-hidden p-1 shrink-0">
             <button
               onClick={() => setSortBy("score")}
-              className={`px-3 py-2 font-medium transition cursor-pointer ${sortBy === "score" ? "bg-indigo-600 text-white" : "text-gray-600 hover:bg-gray-50"}`}
+              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition duration-150 cursor-pointer ${
+                sortBy === "score" 
+                  ? "bg-indigo-600 text-white shadow-sm" 
+                  : "text-slate-600 hover:bg-slate-50"
+              }`}
             >
-              Sort: Team Fit
+              Sort by Team Fit
             </button>
             <button
               onClick={() => setSortBy("votes")}
-              className={`px-3 py-2 font-medium transition cursor-pointer ${sortBy === "votes" ? "bg-indigo-600 text-white" : "text-gray-600 hover:bg-gray-50"}`}
+              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition duration-150 cursor-pointer ${
+                sortBy === "votes" 
+                  ? "bg-indigo-600 text-white shadow-sm" 
+                  : "text-slate-600 hover:bg-slate-50"
+              }`}
             >
-              Sort: Votes
+              Sort by Votes
             </button>
           </div>
         </section>
 
-        {/* Filters + legend */}
-        <section className="flex flex-wrap items-center gap-2">
-          <MultiSelect label="Theme" options={allThemes} selected={themeSel} setSelected={setThemeSel} />
-          <MultiSelect label="Difficulty" options={DIFFICULTIES} selected={diffSel} setSelected={setDiffSel} />
-          <MultiSelect label="Risk/Reward" options={QUADRANTS.map((q) => q.key)} selected={quadSel} setSelected={setQuadSel} />
-          <button onClick={clearFilters} className="text-sm border rounded-lg px-3 py-1.5 bg-white hover:bg-gray-100 cursor-pointer">Clear filters</button>
-          <button onClick={exportCSV} className="text-sm border rounded-lg px-3 py-1.5 bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer">⬇ Export CSV</button>
-          {compareIds.size > 0 && (
-            <button
-              onClick={() => setCompareIds(new Set())}
-              className="text-sm border rounded-lg px-3 py-1.5 bg-red-50 text-red-600 border-red-200 hover:bg-red-100 cursor-pointer"
+        {/* Filters & Export Actions */}
+        <section className="flex flex-wrap items-center gap-2 pt-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <MultiSelect label="Theme" options={allThemes} selected={themeSel} setSelected={setThemeSel} />
+            <MultiSelect label="Difficulty" options={DIFFICULTIES} selected={diffSel} setSelected={setDiffSel} />
+            <MultiSelect label="Risk/Reward" options={QUADRANTS.map((q) => q.key)} selected={quadSel} setSelected={setQuadSel} />
+          </div>
+
+          <div className="flex items-center gap-2 ml-auto sm:ml-0">
+            <button 
+              onClick={clearFilters} 
+              className="text-xs border border-slate-200 rounded-xl px-4 py-2 bg-white hover:bg-slate-50 font-bold text-slate-600 transition shadow-sm cursor-pointer"
             >
-              Clear compare ({compareIds.size})
+              Clear Filters
             </button>
-          )}
-          <span className="text-sm text-gray-500 ml-auto">Showing {visible.length} of {PROBLEMS.length} problems</span>
+            
+            <button 
+              onClick={exportCSV} 
+              className="text-xs rounded-xl px-4 py-2 bg-emerald-600 text-white hover:bg-emerald-700 font-bold transition shadow-sm hover:shadow duration-150 cursor-pointer flex items-center gap-1.5"
+            >
+              <span>⬇</span> Export CSV
+            </button>
+            
+            {compareIds.size > 0 && (
+              <button
+                onClick={() => setCompareIds(new Set())}
+                className="text-xs border border-rose-200 rounded-xl px-4 py-2 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold transition cursor-pointer"
+              >
+                Clear Compare ({compareIds.size})
+              </button>
+            )}
+          </div>
+          
+          <span className="text-xs font-bold text-slate-400 ml-auto hidden md:inline-block">
+            Showing {visible.length} of {PROBLEMS.length} Problems
+          </span>
         </section>
 
         {/* Quadrant legend */}
-        <section className="flex flex-wrap gap-2 text-[11px]">
+        <section className="flex flex-wrap gap-2 text-[10px] font-bold">
           {QUADRANTS.map((q) => (
-            <span key={q.key} className={`px-2 py-0.5 rounded-full border ${q.cls}`}>{q.label}</span>
+            <span key={q.key} className={`px-2.5 py-1 rounded-lg border ${q.cls} shadow-sm`}>{q.label}</span>
           ))}
         </section>
 
@@ -1010,57 +1128,68 @@ export default function App() {
 
       {/* Floating Compare Bar */}
       {compareIds.size >= 2 && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 bg-indigo-700 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-4 text-sm">
-          <span className="font-semibold">{compareIds.size} problems selected</span>
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-950/95 border border-slate-800/80 text-white px-5 py-3 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.3)] flex items-center gap-4 text-xs font-semibold backdrop-blur-md animate-in slide-in-from-bottom-6 duration-200">
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+            {compareIds.size} Contenders Selected
+          </span>
           <button
             onClick={() => document.getElementById("compare-modal").showModal()}
-            className="bg-white text-indigo-700 font-bold px-4 py-1.5 rounded-xl hover:bg-indigo-50 transition cursor-pointer"
+            className="bg-indigo-600 text-white font-extrabold px-4.5 py-2 rounded-xl hover:bg-indigo-700 hover:shadow-md transition duration-150 cursor-pointer flex items-center gap-1"
           >
             ⇔ Compare Side-by-Side
           </button>
           <button
             onClick={() => setCompareIds(new Set())}
-            className="text-indigo-200 hover:text-white underline cursor-pointer"
-          >Clear</button>
+            className="text-slate-400 hover:text-white underline cursor-pointer"
+          >
+            Clear
+          </button>
         </div>
       )}
 
       {/* Comparison Modal */}
-      <dialog id="compare-modal" className="w-[95vw] max-w-6xl max-h-[90vh] rounded-2xl shadow-2xl p-0 backdrop:bg-black/50">
-        <div className="p-5 overflow-auto max-h-[90vh]">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-bold text-indigo-800">⇔ Side-by-Side Comparison</h2>
+      <dialog id="compare-modal" className="w-[95vw] max-w-6xl max-h-[85vh] rounded-3xl shadow-2xl p-0 border border-slate-100 backdrop:bg-slate-950/40 backdrop:backdrop-blur-sm focus:outline-none">
+        <div className="p-6 overflow-auto max-h-[85vh] custom-scrollbar">
+          <div className="flex justify-between items-center mb-5 pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">⇔</span>
+              <div>
+                <h2 className="text-lg font-extrabold text-slate-800 tracking-tight">Side-by-Side Comparison</h2>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Evaluate &amp; Choose Your Target Problem Statement</p>
+              </div>
+            </div>
             <button
               onClick={() => document.getElementById("compare-modal").close()}
-              className="text-gray-400 hover:text-gray-700 text-xl font-bold cursor-pointer"
+              className="text-slate-400 hover:text-slate-600 w-8 h-8 rounded-xl border border-slate-200 flex items-center justify-center font-extrabold hover:bg-slate-50 transition cursor-pointer"
             >✕</button>
           </div>
           {(() => {
             const items = scored.filter(({ p }) => compareIds.has(p.id));
-            if (items.length < 2) return <p className="text-gray-500 text-sm">Select at least 2 problems to compare.</p>;
+            if (items.length < 2) return <p className="text-slate-400 italic text-sm text-center py-10">Select at least 2 problems to compare.</p>;
             return (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm border-collapse">
+              <div className="overflow-x-auto rounded-2xl border border-slate-200/60 shadow-sm">
+                <table className="w-full text-xs border-collapse">
                   <thead>
                     <tr className="bg-slate-50">
-                      <th className="text-left p-3 border-b font-semibold text-gray-500 w-40">Attribute</th>
+                      <th className="text-left p-4 border-b border-slate-200/60 font-bold text-slate-500 w-44 uppercase tracking-wider">Attribute</th>
                       {items.map(({ p }) => (
-                        <th key={p.id} className="text-left p-3 border-b font-bold text-indigo-700 min-w-[200px]">{p.id}</th>
+                        <th key={p.id} className="text-left p-4 border-b border-slate-200/60 font-extrabold text-indigo-700 min-w-[240px] text-sm tracking-tight">{p.id}</th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody>
-                    <tr><td className="p-3 border-b font-semibold text-gray-600">Title</td>{items.map(({ p }) => <td key={p.id} className="p-3 border-b font-medium">{p.title}</td>)}</tr>
-                    <tr><td className="p-3 border-b font-semibold text-gray-600">Organization</td>{items.map(({ p }) => <td key={p.id} className="p-3 border-b text-gray-700">{p.organization}</td>)}</tr>
-                    <tr><td className="p-3 border-b font-semibold text-gray-600">Theme</td>{items.map(({ p }) => <td key={p.id} className="p-3 border-b"><span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-xs">{p.theme}</span></td>)}</tr>
-                    <tr><td className="p-3 border-b font-semibold text-gray-600">Difficulty</td>{items.map(({ p }) => <td key={p.id} className="p-3 border-b"><span className={`px-2 py-0.5 rounded-full text-xs ${p.difficulty === "Hard" ? "bg-red-100 text-red-700" : p.difficulty === "Medium" ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}`}>{p.difficulty}</span></td>)}</tr>
-                    <tr><td className="p-3 border-b font-semibold text-gray-600">Competition</td>{items.map(({ p }) => <td key={p.id} className="p-3 border-b">{p.estimatedCompetition}</td>)}</tr>
-                    <tr className="bg-indigo-50/50"><td className="p-3 border-b font-bold text-indigo-700">Team Fit Score</td>{items.map(({ p, scoring }) => <td key={p.id} className="p-3 border-b font-bold text-lg">{scoring.score}%</td>)}</tr>
-                    <tr><td className="p-3 border-b font-semibold text-gray-600">Team Votes</td>{items.map(({ p }) => { const v = Object.values(marks[p.id]?.votes || {}).filter(Boolean).length; return <td key={p.id} className="p-3 border-b font-semibold">{v > 0 ? `👍 ${v}` : "—"}</td>; })}</tr>
-                    <tr><td className="p-3 border-b font-semibold text-gray-600">Required Skills</td>{items.map(({ p, scoring }) => <td key={p.id} className="p-3 border-b"><div className="flex flex-wrap gap-1">{scoring.details.map(d => <span key={d.skill} className={`text-[10px] px-1.5 py-0.5 rounded-full ${d.covered ? "bg-green-100 text-green-700" : "bg-red-50 text-red-600 border border-red-200"}`}>{d.covered ? "✓" : "⚠"} {d.skill}</span>)}</div></td>)}</tr>
-                    <tr><td className="p-3 border-b font-semibold text-gray-600">Skill Gaps</td>{items.map(({ p, scoring }) => { const gaps = scoring.details.filter(d => !d.covered).map(d => d.skill); return <td key={p.id} className="p-3 border-b">{gaps.length === 0 ? <span className="text-green-600 font-semibold">✅ None!</span> : <span className="text-red-600 font-semibold">{gaps.length} missing</span>}</td>; })}</tr>
-                    <tr><td className="p-3 border-b font-semibold text-gray-600">Tech Stack</td>{items.map(({ p }) => <td key={p.id} className="p-3 border-b"><div className="flex flex-wrap gap-1">{(p.techStack || []).slice(0, 6).map(t => <span key={t} className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600">{t}</span>)}</div></td>)}</tr>
-                    <tr><td className="p-3 font-semibold text-gray-600">Summary</td>{items.map(({ p }) => <td key={p.id} className="p-3 text-gray-600 text-xs leading-relaxed">{p.problemSummary}</td>)}</tr>
+                  <tbody className="divide-y divide-slate-100">
+                    <tr className="hover:bg-slate-50/50 transition"><td className="p-4 font-bold text-slate-500 bg-slate-50/20">Title</td>{items.map(({ p }) => <td key={p.id} className="p-4 font-extrabold text-slate-800 leading-snug">{p.title}</td>)}</tr>
+                    <tr className="hover:bg-slate-50/50 transition"><td className="p-4 font-bold text-slate-500 bg-slate-50/20">Organization</td>{items.map(({ p }) => <td key={p.id} className="p-4 text-slate-500 font-medium">{p.organization}</td>)}</tr>
+                    <tr className="hover:bg-slate-50/50 transition"><td className="p-4 font-bold text-slate-500 bg-slate-50/20">Theme</td>{items.map(({ p }) => <td key={p.id} className="p-4"><span className="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-650 font-bold">{p.theme}</span></td>)}</tr>
+                    <tr className="hover:bg-slate-50/50 transition"><td className="p-4 font-bold text-slate-500 bg-slate-50/20">Difficulty</td>{items.map(({ p }) => <td key={p.id} className="p-4"><span className={`px-2.5 py-1 rounded-lg border font-bold ${p.difficulty === "Hard" ? "bg-rose-50 text-rose-700 border-rose-100" : p.difficulty === "Medium" ? "bg-amber-50 text-amber-700 border-amber-100" : "bg-emerald-50 text-emerald-700 border-emerald-100"}`}>{p.difficulty}</span></td>)}</tr>
+                    <tr className="hover:bg-slate-50/50 transition"><td className="p-4 font-bold text-slate-500 bg-slate-50/20">Competition</td>{items.map(({ p }) => <td key={p.id} className="p-4 font-semibold text-slate-700">{p.estimatedCompetition} Competition</td>)}</tr>
+                    <tr className="bg-indigo-50/20 hover:bg-indigo-50/30 transition"><td className="p-4 font-extrabold text-indigo-700 bg-indigo-50/10">Team Fit Score</td>{items.map(({ p, scoring }) => <td key={p.id} className="p-4 font-black text-xl text-indigo-700">{scoring.score}%</td>)}</tr>
+                    <tr className="hover:bg-slate-50/50 transition"><td className="p-4 font-bold text-slate-500 bg-slate-50/20">Team Votes</td>{items.map(({ p }) => { const v = Object.values(marks[p.id]?.votes || {}).filter(Boolean).length; return <td key={p.id} className="p-4 font-bold text-slate-700">{v > 0 ? `👍 ${v}` : "—"}</td>; })}</tr>
+                    <tr className="hover:bg-slate-50/50 transition"><td className="p-4 font-bold text-slate-500 bg-slate-50/20">Required Skills</td>{items.map(({ p, scoring }) => <td key={p.id} className="p-4"><div className="flex flex-wrap gap-1">{scoring.details.map(d => <span key={d.skill} className={`text-[10px] px-2 py-0.5 rounded-lg border font-medium ${d.covered ? "bg-emerald-50 border-emerald-100 text-emerald-700" : "bg-rose-50 border-rose-100 text-rose-700"}`}>{d.covered ? "✓" : "⚠"} {d.skill}</span>)}</div></td>)}</tr>
+                    <tr className="hover:bg-slate-50/50 transition"><td className="p-4 font-bold text-slate-500 bg-slate-50/20">Skill Gaps</td>{items.map(({ p, scoring }) => { const gaps = scoring.details.filter(d => !d.covered).map(d => d.skill); return <td key={p.id} className="p-4 font-bold">{gaps.length === 0 ? <span className="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-100">✅ No Skill Gaps</span> : <span className="text-rose-600 bg-rose-50 px-2 py-0.5 rounded-lg border border-rose-100">{gaps.length} Missing</span>}</td>; })}</tr>
+                    <tr className="hover:bg-slate-50/50 transition"><td className="p-4 font-bold text-slate-500 bg-slate-50/20">Tech Stack</td>{items.map(({ p }) => <td key={p.id} className="p-4"><div className="flex flex-wrap gap-1">{(p.techStack || []).slice(0, 6).map(t => <span key={t} className="text-[10px] px-2 py-0.5 rounded-lg bg-slate-100 border border-slate-200/50 text-slate-600 font-semibold">{t}</span>)}</div></td>)}</tr>
+                    <tr className="hover:bg-slate-50/50 transition"><td className="p-4 font-bold text-slate-500 bg-slate-50/20">Summary</td>{items.map(({ p }) => <td key={p.id} className="p-4 text-slate-500 font-medium leading-relaxed max-w-sm whitespace-pre-wrap">{p.problemSummary}</td>)}</tr>
                   </tbody>
                 </table>
               </div>
