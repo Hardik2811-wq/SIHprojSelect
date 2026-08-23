@@ -667,7 +667,7 @@ export default function App() {
               <span>👤 <b>{me.name}</b> (Slot {me.slot + 1})</span>
               <button
                 onClick={() => {
-                  saveSlot(me.slot, { name: "" });
+                  saveSlot(me.slot, { name: "", skills: {} });
                   localStorage.removeItem("sih_me");
                   setMe(null);
                 }}
